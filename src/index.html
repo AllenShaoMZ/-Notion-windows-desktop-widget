@@ -1,0 +1,342 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Notion 四象限</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <style>
+      html,
+      body {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+        background: transparent;
+      }
+
+      body {
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+          sans-serif;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      #widget {
+        width: 720px;
+        max-height: 90vh;
+        padding: 0;
+        border-radius: 20px;
+        background: rgba(10, 10, 10, 0.6);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+        color: #f5f5f5;
+        display: flex;
+        flex-direction: column;
+        box-sizing: border-box;
+        backdrop-filter: blur(18px);
+        overflow: hidden;
+      }
+
+      #drag-region {
+        height: 22px;
+        flex-shrink: 0;
+        cursor: move;
+        -webkit-app-region: drag;
+        app-region: drag;
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 6px;
+        padding: 0 8px;
+      }
+
+      .titlebar-btn {
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        border: none;
+        background: rgba(255, 255, 255, 0.35);
+        cursor: pointer;
+        -webkit-app-region: no-drag;
+        app-region: no-drag;
+        padding: 0;
+      }
+      
+      #btn-settings {
+        background: rgba(255, 255, 255, 0.28);
+      }
+
+      #btn-settings:hover {
+        background: rgba(180, 180, 255, 0.9);
+      }
+
+      #btn-close {
+        background: rgba(255, 255, 255, 0.45);
+      }
+
+      #btn-close:hover {
+        background: rgba(255, 100, 100, 0.85);
+      }
+
+      .quadrants {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        grid-template-rows: 1fr 1fr;
+        gap: 10px;
+        flex: 1;
+        min-height: 320px;
+        padding: 10px 14px 14px;
+      }
+
+      .quadrant {
+        border-radius: 14px;
+        background: rgba(255, 255, 255, 0.04);
+        padding: 8px 10px;
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+      }
+
+      .quadrant-title {
+        font-size: 12px;
+        font-weight: 600;
+        margin-bottom: 6px;
+        padding-bottom: 4px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+      }
+
+      .quadrant.important-urgent .quadrant-title { color: #f87171; }
+      .quadrant.important-not-urgent .quadrant-title { color: #fbbf24; }
+      .quadrant.not-important-urgent .quadrant-title { color: #60a5fa; }
+      .quadrant.not-important-not-urgent .quadrant-title { color: #a78bfa; }
+
+      .quadrant-tasks {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        overflow-y: auto;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+      }
+
+      .task-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        padding: 4px 6px;
+        border-radius: 6px;
+        transition: background 0.15s ease;
+        cursor: default;
+      }
+
+      .task-item:hover {
+        background: rgba(255, 255, 255, 0.06);
+      }
+
+      .task-name {
+        font-size: 12px;
+        line-height: 1.35;
+        flex: 1;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        cursor: pointer;
+      }
+
+      .task-status-wrap {
+        flex-shrink: 0;
+      }
+
+      .task-status-select {
+        font-size: 11px;
+        padding: 2px 6px;
+        border-radius: 4px;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        background: rgba(255, 255, 255, 0.08);
+        color: inherit;
+        cursor: pointer;
+        min-width: 64px;
+      }
+
+      .task-status-select:hover {
+        background: rgba(255, 255, 255, 0.12);
+      }
+
+      .btn-add {
+        margin-top: 6px;
+        padding: 4px 8px;
+        font-size: 11px;
+        border-radius: 6px;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        background: rgba(255, 255, 255, 0.08);
+        color: inherit;
+        cursor: pointer;
+      }
+
+      .btn-add:hover {
+        background: rgba(255, 255, 255, 0.14);
+      }
+
+      #error-box {
+        font-size: 12px;
+        color: #ffb4b4;
+        background: rgba(120, 0, 0, 0.45);
+        border-radius: 8px;
+        padding: 6px 8px;
+        margin: 0 14px 10px;
+        display: none;
+      }
+
+      .modal-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.6);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 100;
+      }
+
+      .modal-overlay.show {
+        display: flex;
+      }
+
+      .modal {
+        background: rgba(28, 28, 28, 0.98);
+        border-radius: 12px;
+        padding: 16px;
+        width: 320px;
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+      }
+
+      .modal h3 {
+        margin: 0 0 12px 0;
+        font-size: 14px;
+      }
+
+      .modal label {
+        display: block;
+        font-size: 11px;
+        opacity: 0.8;
+        margin-bottom: 4px;
+      }
+
+      .modal input {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 6px 8px;
+        border-radius: 6px;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        background: rgba(255, 255, 255, 0.08);
+        color: #fff;
+        font-size: 13px;
+        margin-bottom: 10px;
+      }
+
+      .modal-actions {
+        display: flex;
+        gap: 8px;
+        justify-content: flex-end;
+        margin-top: 12px;
+      }
+
+      .modal-actions button {
+        padding: 6px 12px;
+        border-radius: 6px;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        background: rgba(255, 255, 255, 0.1);
+        color: #fff;
+        cursor: pointer;
+        font-size: 12px;
+      }
+
+      .modal-actions button.primary {
+        background: #3b82f6;
+        border-color: #3b82f6;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div id="widget">
+      <div id="drag-region" data-tauri-drag-region>
+        <button id="btn-settings" class="titlebar-btn" title="配置"></button>
+        <button id="btn-close" class="titlebar-btn" title="关闭"></button>
+      </div>
+
+      <div class="quadrants">
+        <div class="quadrant important-urgent" data-tag="重要紧急">
+          <div class="quadrant-title">重要紧急</div>
+          <ul class="quadrant-tasks" id="q-重要紧急"></ul>
+          <button type="button" class="btn-add" data-tag="重要紧急">+ 新增任务</button>
+        </div>
+        <div class="quadrant important-not-urgent" data-tag="重要不紧急">
+          <div class="quadrant-title">重要不紧急</div>
+          <ul class="quadrant-tasks" id="q-重要不紧急"></ul>
+          <button type="button" class="btn-add" data-tag="重要不紧急">+ 新增任务</button>
+        </div>
+        <div class="quadrant not-important-urgent" data-tag="不重要紧急">
+          <div class="quadrant-title">不重要紧急</div>
+          <ul class="quadrant-tasks" id="q-不重要紧急"></ul>
+          <button type="button" class="btn-add" data-tag="不重要紧急">+ 新增任务</button>
+        </div>
+        <div class="quadrant not-important-not-urgent" data-tag="不重要不紧急">
+          <div class="quadrant-title">不重要不紧急</div>
+          <ul class="quadrant-tasks" id="q-不重要不紧急"></ul>
+          <button type="button" class="btn-add" data-tag="不重要不紧急">+ 新增任务</button>
+        </div>
+      </div>
+
+      <div id="error-box"></div>
+    </div>
+
+    <div class="modal-overlay" id="add-modal">
+      <div class="modal">
+        <h3 id="modal-quadrant-title">新增任务</h3>
+        <label for="new-task-title">任务名称</label>
+        <input type="text" id="new-task-title" placeholder="输入任务名称" />
+        <label for="new-task-status">状态</label>
+        <input type="text" id="new-task-status" value="未开始" placeholder="未开始 / 进行中 / 已完成" />
+        <label for="new-task-date">日期（可选，需在 config 中配置 date_property）</label>
+        <input type="date" id="new-task-date" />
+        <div class="modal-actions">
+          <button type="button" id="modal-cancel">取消</button>
+          <button type="button" class="primary" id="modal-confirm">添加</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-overlay" id="settings-modal">
+      <div class="modal">
+        <h3>Notion 配置</h3>
+        <label for="cfg-database-id">数据库 ID</label>
+        <input type="text" id="cfg-database-id" placeholder="database_id" />
+
+        <label for="cfg-title-property">标题列名</label>
+        <input type="text" id="cfg-title-property" placeholder="例如：任务" />
+
+        <label for="cfg-tags-property">Tags 列名</label>
+        <input type="text" id="cfg-tags-property" placeholder="例如：Tags" />
+
+        <label for="cfg-done-property">状态列名</label>
+        <input type="text" id="cfg-done-property" placeholder="例如：状态" />
+
+        <label for="cfg-date-property">日期列名（可选）</label>
+        <input type="text" id="cfg-date-property" placeholder="例如：日期 / 截止日期" />
+
+        <div class="modal-actions">
+          <button type="button" id="settings-cancel">取消</button>
+          <button type="button" class="primary" id="settings-save">保存</button>
+        </div>
+      </div>
+    </div>
+
+    <script src="/main.js" defer></script>
+  </body>
+</html>
