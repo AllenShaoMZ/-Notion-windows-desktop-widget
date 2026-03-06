@@ -7,6 +7,8 @@
 > - 像桌面小组件一样轻量、半透明、不打扰当前应用；  
 > - 一次配置后，日常使用基本无需碰命令行。
 
+<img width="733" height="410" alt="a9d3c766283e676015227174f5f49d7b" src="https://github.com/user-attachments/assets/8569965e-feeb-4034-a6fd-ff2c3507cb14" />
+
 ---
 
 ## 功能特性
